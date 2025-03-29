@@ -80,7 +80,7 @@ class FuncMetadata(BaseModel):
         dicts (JSON objects) as JSON strings, which can be pre-parsed here.
         """
         new_data = data.copy()  # Shallow copy
-        for field_name, field_info in self.arg_model.model_fields.items():
+        for field_name, _field_info in self.arg_model.model_fields.items():
             if field_name not in data.keys():
                 continue
             if isinstance(data[field_name], str):
@@ -88,7 +88,7 @@ class FuncMetadata(BaseModel):
                     pre_parsed = json.loads(data[field_name])
                 except json.JSONDecodeError:
                     continue  # Not JSON - skip
-                if isinstance(pre_parsed, str):
+                if isinstance(pre_parsed, str | int | float):
                     # This is likely that the raw value is e.g. `"hello"` which we
                     # Should really be parsed as '"hello"' in Python - but if we parse
                     # it as JSON it'll turn into just 'hello'. So we skip it.
@@ -177,7 +177,9 @@ def func_metadata(
 
 
 def _get_typed_annotation(annotation: Any, globalns: dict[str, Any]) -> Any:
-    def try_eval_type(value, globalns, localns):
+    def try_eval_type(
+        value: Any, globalns: dict[str, Any], localns: dict[str, Any]
+    ) -> tuple[Any, bool]:
         try:
             return eval_type_backport(value, globalns, localns), True
         except NameError:
